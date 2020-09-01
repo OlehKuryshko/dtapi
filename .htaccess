@@ -17,7 +17,7 @@ AddCharset UTF-8 .html
 php_value session.use_cookies 1
 
 # Installation directory
-RewriteBase /
+RewriteBase /api/
 
 # Protect hidden files from being viewed
 <Files .*>

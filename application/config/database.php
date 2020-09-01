@@ -29,7 +29,7 @@ return array
 		'caching'      => FALSE,
 	),
 	'default' => array(
-		'type'       => 'PDO_MySQL',
+		'type'       => 'PDO',
 		'connection' => array(
 			/**
 			 * The following options are available for PDO:
