@@ -1,0 +1,26 @@
+FROM alpine:3.12.0
+ARG WORK_DIR=/tmp/src/
+WORKDIR ${WORK_DIR}
+
+RUN apk update && apk --no-cache upgrade
+RUN apk add --no-cache openrc apache2 php7-apache2 libmcrypt-dev php7 php7-fpm php7-opcache php7-pdo_mysql php7-xml \
+ php7-xmlrpc php7-json php7-soap php7-mbstring php7-pecl-mcrypt php7-pecl-memcache php7-mysqli php7-ctype git
+RUN rc-update add php-fpm7 default
+
+RUN git clone https://github.com/OlehKuryshko/dtapi.git /tmp/src/
+
+RUN rm -rf /var/www/localhost/htdocs/index.html && \
+    mv /tmp/src/conf/httpd.conf /etc/apache2/httpd.conf && \
+    cp -r /tmp/src/conf/api /var/www/localhost/htdocs/api && \
+    cp -r ${WORK_DIR}/application /var/www/localhost/htdocs/api/
+RUN sed -i "/'dsn'/ s|mysql:host=localhost;dbname=dtapi2|mysql:host=10.0.12.9;dbname=dtapi2|" /var/www/localhost/htdocs/api/application/config/database.php
+RUN sed -i "/'password'/ s|'dtapi'|'password'|" /var/www/localhost/htdocs/api/application/config/database.php
+RUN mkdir /var/www/localhost/htdocs/api/application/cache /var/www/localhost/htdocs/api/application/logs && \
+    chmod 733 /var/www/localhost/htdocs/api/application/cache && \
+    chmod 722 /var/www/localhost/htdocs/api/application/logs && \
+    chown apache. -R /var/www/localhost/htdocs/ && \
+    mkdir -p /etc/apache2/sites-available/ && \
+    mv /tmp/src/conf/dtapi.conf  /etc/apache2/sites-available/dtapi.conf
+
+CMD ["-D","FOREGROUND"]
+ENTRYPOINT ["/usr/sbin/httpd"]
