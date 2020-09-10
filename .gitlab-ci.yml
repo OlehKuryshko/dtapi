@@ -1,3 +1,6 @@
+variables:
+  IMAGE_TAG: $CI_PIPELINE_ID-$CI_COMMIT_REF_NAME
+
 stages:
   - build
   - deploy
@@ -5,23 +8,28 @@ stages:
 services:
 - docker:dind
 
-letsbuildit:
+build:
   image: docker:latest
   stage: build
   script:
     - docker login registry.gitlab.com -u ${USERNAME} -p ${REGISTRY_PASSWORD}
-    - docker build -t registry.gitlab.com/oleh_kuryshko/dtapi:${CI_PIPELINE_ID} .
-    - docker push registry.gitlab.com/oleh_kuryshko/dtapi:${CI_PIPELINE_ID}
+    - docker build -t registry.gitlab.com/oleh_kuryshko/dtapi:${IMAGE_TAG} .
+    - docker push registry.gitlab.com/oleh_kuryshko/dtapi:${IMAGE_TAG}
+  tags:
+    - docker
 
 
-deploytoprod:
+
+deploy:
   image: google/cloud-sdk:latest
   stage: deploy
   script:
-    - sed -i "s/IMAGE_TAG/${CI_PIPELINE_ID}/g" ci/svc-dp-bk.yml
+    - sed -i "s/IMAGE_TAG/${IMAGE_TAG}/g" ci/svc-dp-bk.yml
     - echo ${GOOGLE_KEY} > key.json
     - gcloud auth activate-service-account --key-file key.json
     - gcloud container clusters get-credentials d-tester-claster --zone us-central1-f --project ${PROJECT_ID}
     - gcloud config set container/use_client_certificate True
     - kubectl apply -f ci/svc-dp-bk.yml
   when: manual
+  tags:
+    - docker
